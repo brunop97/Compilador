@@ -50,17 +50,17 @@ Símbolos Terminais:
 
 Regras de Produção:
 
-Sintatico -> statements
-statements -> statement | statement , statements
-statement -> assignment | verify_if | verify_while
-assignment -> identifier OP_ATR expression
-expression -> math_expression | '(' bin_expression ')'
-math_expression -> identifier | number | OP_ARIT math_expression
-bin_expression -> identifier OP_BINARIO identifier | '(' expression OP_BINARIO expression ')'
-verify_if -> CMD_IF '(' expression ')' '{' statements '}' (CMD_ELSE '{' statements '}')
-verify_while -> CMD_WHILE '(' expression ')' '{' statements '}'
-identifier -> ID (',' ID)*
-number -> NUM
+- Sintatico -> statements
+- statements -> statement | statement , statements
+- statement -> assignment | verify_if | verify_while
+- assignment -> identifier OP_ATR expression
+- expression -> math_expression | '(' bin_expression ')'
+- math_expression -> identifier | number | OP_ARIT math_expression
+- bin_expression -> identifier OP_BINARIO identifier | '(' expression OP_BINARIO expression ')'
+- verify_if -> CMD_IF '(' expression ')' '{' statements '}' (CMD_ELSE '{' statements '}')
+- verify_while -> CMD_WHILE '(' expression ')' '{' statements '}'
+- identifier -> ID (',' ID)*
+- number -> NUM
 
 # Como Executar
 
