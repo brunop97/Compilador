@@ -9,13 +9,13 @@ Este analisador apresenta uma implementação simples de analisador léxico e an
 
 O Analisador Léxico reconhece os seguintes padrões:
 
-- Delimitadores: '(', ')', '.', '\n', '\t', '\r', ' '; desconsiderando brancos e sinais de tabulação;
+- Delimitadores: ';', '[', ']', ')', '(', ')', '{', '}', ',', '.'; desconsiderando brancos e sinais de tabulação;
 - Números: [0-9];
 - Letras maiúsculas: [A-Z];
 - Letras minúsculas: [a-z];
 - Identificadores: palavras formadas por Letras maiúsculas e minúsculas;
-- Operadores aritméticos binários: '+', '-', '*', '/', cada operador precisa de um identificador único, por exemplo, um token OP_ADD para o '+';
-- Operadores relacionais binários: '>', '>=', '<', '<=', '<>', '==', cada operador precisa de um identificador único, por exemplo, um token OP_EQ para o '==';
+- Operadores aritméticos binários: '+', '-', '*', '/', '^';
+- Operadores relacionais binários: '>', '>=', '<', '<=', '<>', '==';
 - Comando de atribuição: '=';
 - Comando de desvio: 'if', ‘else’;
 - Comando de repetição : 'while';
@@ -36,24 +36,15 @@ O Analisador Sintático reconhece os seguintes padrões:
 Símbolos Terminais:
 
 - ID: Identificador (variável)
+- ID_VAR: Identificador de tipo de variável (inteiro, real, etc.)
 - NUM: Número (inteiro ou real)
 - OP_ATR: Operador de atribuição (=)
-- OP_ADD: Operador de adição (+)
-- OP_SUB: Operador de subtração (-)
-- OP_MUL: Operador de multiplicação (*)
-- OP_DIV: Operador de divisão (/)
-- OP_POW: Operador de potência (^)
-- OP_MOI: Operador maior ou igual a (>=)
-- OP_MOE: Operador menor ou igual a (<=)
-- OP_DIF: Operador diferente de (<>)
-- OP_IGU: Operador igual a (==)
-- OP_MAI: Operador maior que (>)
-- OP_MEN: Operador menor que (<)
-- DELIM: Delimitador (;, [, ], ), (, {, }, ,, `.)
+- OP_ARIT: Operador aritmetico (+ - * / ^)
+- OP_BINARIO: Operador binario (>= <= <> == > <)
+- DELIM: Delimitador (; [ ] ) ( { } , .)
 - CMD_WHILE: Comando while
 - CMD_IF: Comando if
 - CMD_ELSE: Comando else
-- ID_VAR: Identificador de tipo de variável (inteiro, real, etc.)
 
 ------------------------------------------
 
@@ -78,21 +69,17 @@ Símbolos Não Terminais:
 ------------------
 Regras de Produção:
 
-- programa -> bloco
-- bloco -> {declaração}
-- declaração -> decl_var_lista | comando
-- decl_var_lista -> tipo_var lista_var
-- decl_var_simples -> ID (OP_ATR expr)
-- tipo_var -> int | real
-- lista_var -> ID | DELIM ','
-- expr -> termo op_add termo | termo op_sub termo
-- termo -> fator op_mul fator | fator op_div fator
-- fator -> ID | NUM | expr
-- op_relacional -> OP_MOI | OP_MOE | OP_DIF | OP_IGU | OP_MAI | OP_MEN
-- comando_atribuicao -> ID OP_ATR expr
-- comando_repeticao -> CMD_WHILE expr bloco
-- comando_condicional -> CMD_IF expr bloco CMD_ELSE bloco
-- comando -> comando_atribuicao | comando_repeticao | comando_condicional | bloco
+Sintatico -> statements
+statements -> statement | statement , statements
+statement -> assignment | verify_if | verify_while
+assignment -> identifier OP_ATR expression
+expression -> math_expression | '(' bin_expression ')'
+math_expression -> identifier | number | OP_ARIT math_expression
+bin_expression -> identifier OP_BINARIO identifier | '(' expression OP_BINARIO expression ')'
+verify_if -> CMD_IF '(' expression ')' '{' statements '}' (CMD_ELSE '{' statements '}')
+verify_while -> CMD_WHILE '(' expression ')' '{' statements '}'
+identifier -> ID (',' ID)*
+number -> NUM
 
 # Como Executar
 

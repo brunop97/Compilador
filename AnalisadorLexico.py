@@ -1,4 +1,3 @@
-import sys
 import re
 
 token = ""
@@ -62,7 +61,7 @@ def ver_rel(elemento):
 
 def verifica_reservada(token):
     """ Verifica se determinado token é reservado e retorna um código para o mesmo """
-    reservada_list = ['if', 'else', 'while', 'int', 'float', 'real', 'char']
+    reservada_list = ['if', 'else', 'while', 'int', 'float', 'real', 'char', 'var']
     cont = 0
     for i in reservada_list:
         cont = cont + 1
@@ -127,7 +126,7 @@ for i in arquivo:
                     if verifica_reservada(token) == 3:
                         token_geral.append(["CMD_WHILE", token])
 
-                    if verifica_reservada(token) > 3 and verifica_reservada(token) < 8:
+                    if verifica_reservada(token) > 3 and verifica_reservada(token) < 9:
                         token_geral.append(["ID_VAR", token])
 
                     if k != " ":
@@ -206,16 +205,18 @@ for i in arquivo:
 
         if estado == 3:
             """ Estado de indentificacao de operador aritmetico """
-            if (k) == '+':
-                token_geral.append(["OP_ADD", k])             
-            if (k) == '-':
-                token_geral.append(["OP_SUB", k])  
-            if (k) == '*':
-                token_geral.append(["OP_MUL", k])
-            if (k) == '/':
-                token_geral.append(["OP_DIV", k])
-            if (k) == '^':
-                token_geral.append(["OP_POW", k])
+            if k in ('+', '-', '*', '/', '^'):
+                token_geral.append(["OP_ARIT", k])   
+            # if (k) == '+':
+            #     token_geral.append(["OP_ADD", k])             
+            # if (k) == '-':
+            #     token_geral.append(["OP_SUB", k])  
+            # if (k) == '*':
+            #     token_geral.append(["OP_MUL", k])
+            # if (k) == '/':
+            #     token_geral.append(["OP_DIV", k])
+            # if (k) == '^':
+            #     token_geral.append(["OP_POW", k])
             estado = 0
 
         if estado == 4:
@@ -225,16 +226,18 @@ for i in arquivo:
                 estado = 0
                 if verifica_relacional(relacional):
                     if verifica_relacional(relacional) == 1:
-                        token_geral.append(["OP_MOI", relacional])
+                        token_geral.append(["OP_BINARIO", relacional])
+                    # if verifica_relacional(relacional) == 1:
+                    #     token_geral.append(["OP_MOI", relacional])
 
-                    if verifica_relacional(relacional) == 2:
-                        token_geral.append(["OP_MOE", relacional])
+                    # if verifica_relacional(relacional) == 2:
+                    #     token_geral.append(["OP_MOE", relacional])
                     
-                    if verifica_relacional(relacional) == 3:
-                        token_geral.append(["OP_DIF", relacional])
+                    # if verifica_relacional(relacional) == 3:
+                    #     token_geral.append(["OP_DIF", relacional])
                     
-                    if verifica_relacional(relacional) == 4:
-                        token_geral.append(["OP_IGU", relacional])
+                    # if verifica_relacional(relacional) == 4:
+                    #     token_geral.append(["OP_IGU", relacional])
 
                     if k != " ":
                         if verifica_erro(k, token_geral, linha, coluna):
@@ -242,21 +245,34 @@ for i in arquivo:
                     relacional = ""
 
                 else:
-
-                    if (relacional) == '>':
-                        token_geral.append(["OP_MAI", relacional])
+                    if relacional in ('>', '<'):
+                        token_geral.append(["OP_BINARIO", relacional])
+                    # if (relacional) == '>':
+                    #     token_geral.append(["OP_MAI", relacional])
                     
-                    if (relacional) == '<':
-                        token_geral.append(["OP_MEN", relacional])
+                    # if (relacional) == '<':
+                    #     token_geral.append(["OP_MEN", relacional])
                     
-                    if (relacional) == '=':
+                    if relacional == '=':
                         token_geral.append(["OP_ATR", relacional])
                     
                     estado = 0
                     relacional = ""
 
         if estado == 5:
-            if (k) in separadores:
+            if k in separadores:
+                # if k == '{':
+                #     token_geral.append(["ABRE_CHAVES", k])
+                # elif k == '}':
+                #     token_geral.append(["FECHA_CHAVES", k])
+                # elif k == '(':
+                #     token_geral.append(["ABRE_PARENTESES", k])
+                # elif k == ')':
+                #     token_geral.append(["FECHA_PARENTESES", k])
+                # elif k == ',':
+                #     token_geral.append(["VIRGULA", k])  
+                # else:
+                #     token_geral.append(["DELIMITADOR", k])
                 token_geral.append(["DELIM", k])
             estado = 0
             

@@ -1,145 +1,179 @@
-class SyntacticAnalyzer:
-    def __init__(self, matriz):
-        self.matriz = matriz
-        self.pos = 0
+def sintatico(tokens):
+    var_declaration(tokens)
+    statements(tokens)
 
-    def next_token(self):
-        global token_atual
-
-        if self.pos < len(self.matriz):
-            token_atual= self.matriz[self.pos]
-            self.pos += 1
-            return token_atual
-        else:
-            return None  
-
-    def error(self, message):
-        print(f"Error: {message}")
-
-    def programa(self):
-        self.declaracao()
-
-    def declaracao(self):
-        if self.decl_var() or self.comando():
-            pass
-        else:
-            self.error("Declaração inválida.")
-
-    def decl_var(self):
-        if self.tipo_var():
-            self.lista_var()
-            return True
-        else:
-            return False
-
-    def tipo_var(self):
-        if self.next_token()[0] in 'ID_VAR':
-            self.next_token()
-            return True
-        else:
-            return False
-
-    def lista_var(self):
-        if self.next_token()[0] in 'ID':
-            self.next_token()
-        elif token_atual and 'DELIM' in token_atual:
-            if self.next_token()[0] in 'ID':
-                self.next_token()
-        else:
-            self.error("Falta de identificador na lista de variáveis.")
-
-    def expr(self):
-        self.termo()
-        if self.next_token()[0] in ['OP_ADD', 'OP_SUB']:
-            op = self.next_token()
-            self.termo()
-        else:
-            self.error("Operador inválido.")
-
-    def termo(self):
-        self.fator()
-        if self.next_token()[0] in ['OP_MUL', 'OP_DIV']:
-            op = self.next_token()
-            self.fator()
-        else:
-            self.error("Operador inválido.")
-
-    def fator(self):
-        if self.next_token()[0] in ['ID', 'NUM']:
-            self.next_token()
-        elif self.next_token()[0] in '(':
-            self.next_token()
-            self.expr()
-            if self.next_token()[0] in ')':
-                self.next_token()
+def var_declaration(tokens):
+    #DECLARACAO DO TIPO DAS VARIAVEIS E SEUS NOMES
+    if tokens[0][1] == "var":
+        tokens.pop(0)
+        while(tokens[0][0] in ['ID_VAR']):
+            if tokens[0][1] in ['int', 'real']:
+                tokens.pop(0)
+                #print(tokens[0][0], tokens[1][0])
+                while tokens[0][0] in ['ID'] and tokens[1][0] not in ['OP_ATR']:
+                    identifier(tokens)
             else:
-                self.error("Falta de ')' no final da expressão.")
-        else:
-            self.error("Fator inválido.")
+                raise SyntaxError("Expected 'int' or 'real' after 'var' declaration")
+    else:
+        raise SyntaxError("Expected 'var' declaration")
 
-    def comando_atribuicao(self):
-        if self.next_token()[0] in 'ID':
-            self.next_token()
-            if self.next_token()[0] in 'OP_ATR':
-                self.next_token()
-                self.expr()
-            else:
-                self.error("Falta de '=' no comando de atribuição.")
+    #DECLARACAO DE VALOR DE VARIAVEL
+    if tokens[0][0] in ['ID'] and tokens[1][0] in ['OP_ATR']:
+        tokens.pop(0) #elimina o identificador
+        tokens.pop(0) #elimina o igual
+        if tokens [0][0] in ['ID', 'NUM']:
+            tokens.pop(0)
         else:
-            self.error("Identificador não declarado.")
+            raise SyntaxError("Expected 'ID' or 'NUM' declaration")
 
-    def comando_repeticao(self):
-        if self.next_token()[0] in 'CMD_WHILE':
-            self.next_token()
-            if self.next_token()[0] in '(':
-                self.next_token()
-                self.expr()
-                if self.next_token()[0] in ')':
-                    self.next_token()
-                    self.bloco()
+def statements(tokens):
+    while tokens:
+        if tokens[0][1] == "}":
+            return
+        else:
+            statement(tokens)
+
+def statement(tokens):
+    if tokens[0][0] == "CMD_IF":
+        verify_if(tokens)
+    elif tokens[0][0] == "CMD_WHILE":
+        verify_while(tokens)
+    else:
+        assignment(tokens)
+
+def verify_if(tokens):
+    if tokens[0][0] == "CMD_IF":
+        tokens.pop(0)
+        if tokens[0][1] == "(":
+            tokens.pop(0)
+            bin_expression(tokens)
+            if tokens[0][1] == ")":
+                tokens.pop(0)
+                if tokens[0][1] == "{":
+                    tokens.pop(0)
+                    statements(tokens)
+                    if tokens[0][1] == "}":
+                        tokens.pop(0)
+                        if tokens[0][0] == "CMD_ELSE":
+                            tokens.pop(0)
+                            if tokens[0][1] == "{":
+                                tokens.pop(0)
+                                statements(tokens)
+                                if tokens[0][1] == "}":
+                                    tokens.pop(0)
+                                else:
+                                    raise SyntaxError("Expected '}' after statements")
+                            else:
+                                raise SyntaxError("Expected '{' after else condition")
+                        else:
+                            return
+                    else:
+                        raise SyntaxError("Expected '}' after statements")
                 else:
-                    self.error("Falta de ')' no final do comando while.")
+                    raise SyntaxError("Expected '{' after if condition")
             else:
-                self.error("Falta de '(' no comando while.")
-
-    def comando_condicional(self):
-        if self.next_token()[0] in 'CMD_IF':
-            self.next_token()
-            if self.next_token()[0] in '(':
-                self.next_token()
-                self.expr()
-                if self.next_token()[0] in ')':
-                    self.next_token()
-                    self.bloco()
-                    if self.next_token()[0] in 'CMD_ELSE':
-                        self.next_token()
-                        self.bloco()
-                else:
-                    self.error("Falta de ')' no final do comando if.")
-            else:
-                self.error("Falta de '(' no comando if.")
-
-    def comando(self):
-        if self.comando_atribuicao():
-            return True
-        elif self.comando_repeticao():
-            return True
-        elif self.comando_condicional():
-            return True
-        elif self.bloco():
-            return True
+                raise SyntaxError("Expected ')' after if condition")
         else:
-            return False
+            raise SyntaxError("Expected '(' after 'if'")
 
-    def bloco(self):
-        if self.next_token()[0] in '{':
-            self.next_token()
-            while self.declaracao():
-                pass
-            if self.next_token()[0] in '}':
-                self.next_token()
+def verify_while(tokens):
+    if tokens[0][0] == "CMD_WHILE":
+        tokens.pop(0)
+        if tokens[0][1] == "(":
+            tokens.pop(0)
+            bin_expression(tokens)
+            if tokens[0][1] == ")":
+                tokens.pop(0)
+                if tokens[0][1] == "{":
+                    tokens.pop(0)
+                    statements(tokens)
+                    if tokens[0][1] == "}":
+                        tokens.pop(0)
+                    else:
+                        raise SyntaxError("Expected '}' after statements")
+                else:
+                    raise SyntaxError("Expected '{' after while condition")
             else:
-                self.error("Falta de '}' no final do bloco.")
+                raise SyntaxError("Expected ')' after while condition")
+        else:
+            raise SyntaxError("Expected '(' after 'while'")    
+
+def assignment(tokens):
+    identifier(tokens)
+    if tokens[0][1] == "=":
+        tokens.pop(0)
+        math_expression(tokens)
+    else:
+        raise SyntaxError("Expected '=' after identifier")
+
+def math_expression(tokens):
+    if tokens[0][0] == "ID":
+        identifier(tokens)
+        math_expression(tokens)
+    elif tokens[0][0] == "NUM":
+        number(tokens)
+        math_expression(tokens)
+    elif tokens[0][0] == "OP_ARIT":
+        op_aritmetico(tokens)
+        math_expression(tokens)
+    else:
+        return
+
+def expression(tokens):
+    if tokens[0][1] == "(":
+        tokens.pop(0)
+        bin_expression(tokens)
+        if tokens[0][1] == ")":
+            return
+        else:
+            raise SyntaxError("Expected ')' after expression")
+    else:
+        raise SyntaxError("Invalid expression")
+
+#FUNCAO QUE VERIFICA SE HÁ UMA COMPARAÇAO DENTRO DO PARENTESES DAS FUNCOES
+def bin_expression(tokens):
+    if tokens[0][0] in ["ID"]:
+        tokens.pop(0)
+        #if tokens[0][0] in ["OP_MOI", "OP_MOE", "OP_DIF", "OP_IGU", "OP_MAI", "OP_MEN", "OP_ATR"]:
+        if tokens[0][0] in ["OP_BINARIO"]:
+            tokens.pop(0)
+        else:
+            raise SyntaxError("Expected an 'Operador Binario' after an identifier")
+        
+        if tokens[0][0] in ["ID", "NUM"]:
+            tokens.pop(0)
+            bin_expression(tokens)
+        else:
+            raise SyntaxError("Expected an 'identifier or Number' after Operador Binario")
+    else:
+        return
+
+def identifier(tokens):
+    if tokens[0][0] in ["ID"]:
+        tokens.pop(0)
+        if tokens[0][1] in [',']:
+            tokens.pop(0)
+    else:
+        raise SyntaxError("Invalid identifier")
+
+def number(tokens):
+    if tokens[0][0] == "NUM":
+        tokens.pop(0)
+    else:
+        raise SyntaxError("Invalid number")
+
+def op_aritmetico(tokens):
+    if tokens[0][0] == "OP_ARIT":
+        tokens.pop(0)
+    else:
+        raise SyntaxError("Invalid Aritmetic Operator")
+
+def exibe_imprime():
+    """escreve no arquivo de saida"""
+    arq = open("C:/Users/Bruno/Documents/GitHub/Compilador/SaidaAnalisadorSintatico.txt", "w")
+    arq.write("Analise Sintatica Concluida Com Sucesso")    
+    print("\n\nAnalise Sintatica Concluida Com Sucesso\n\n")
+    arq.close()
 
 def processar_linha(linha):
     linha = linha.replace('[', '').replace(']', '')  # Remove os colchetes
@@ -160,42 +194,73 @@ def processar_linha(linha):
     return tokens
 
 def ler_arquivo_txt(arquivo):
-    matriz = []
+    tokens = []
     with open(arquivo, 'r') as arquivo_txt:
         linhas = arquivo_txt.readlines()
         for linha in linhas:
-            matriz.append(processar_linha(linha))
-    return matriz
+            tokens.append(processar_linha(linha))
+    return tokens
 
 
 arquivo = 'C:/Users/Bruno/Documents/GitHub/Compilador/SaidaAnalisadorLexico.txt'
-matriz = ler_arquivo_txt(arquivo)
 
-print(matriz)
+# Input Automatico dos Tokens pelo arquivo TXT
+tokens = ler_arquivo_txt(arquivo)
 
-syntactic_analyzer = SyntacticAnalyzer(matriz)
+# Input Manual dos Tokens sem arquivo TXT
+# tokens = [
+#     ['ID_VAR', 'var'],
+#     ['ID_VAR', 'int'],
+#     ['ID', 'cont'],
+#     ['DELIM', ','],
+#     ['ID', 'num'],
+#     ['ID_VAR', 'real'],
+#     ['ID', 'cont2'],
+#     ['ID', 'num'],
+#     ['OP_ATR', '='],
+#     ['NUM', '0'],
+#     ['CMD_WHILE', 'while'],
+#     ['DELIM', '('],
+#     ['ID', 'cont'],
+#     ['OP_BINARIO', '<'],
+#     ['NUM', '10'],
+#     ['DELIM', ')'],
+#     ['DELIM', '{'],
+#     ['ID', 'cont2'],
+#     ['OP_ATR', '='],
+#     ['NUM', '3.1415'],
+#     ['OP_ARIT', '*'],
+#     ['ID', 'contador'],
+#     ['NUM', '2'],
+#     ['CMD_IF', 'if'],
+#     ['DELIM', '('],
+#     ['ID', 'cont'],
+#     ['OP_BINARIO', '<'],
+#     ['NUM', '5'],
+#     ['DELIM', ')'],
+#     ['DELIM', '{'],
+#     ['ID', 'num'],
+#     ['OP_ATR', '='],
+#     ['ID', 'num'],
+#     ['OP_ARIT', '+'],
+#     ['ID', 'cont2'],
+#     ['DELIM', '}'],
+#     ['CMD_ELSE', 'else'],
+#     ['DELIM', '{'],
+#     ['ID', 'cont'],
+#     ['OP_ATR', '='],
+#     ['NUM', '0'],
+#     ['DELIM', '}'],
+#     ['ID', 'cont'],
+#     ['OP_ATR', '='],
+#     ['ID', 'cont'],
+#     ['OP_ARIT', '+'],
+#     ['NUM', '1'],
+#     ['DELIM', '}'],
+# ]
 
-def exibe_imprime(programa_status, tokens_analisados):
-    """Escreve no arquivo de saída."""
-    arquivo_saida = "C:/Users/Bruno/Documents/GitHub/Compilador/SaidaAnalisadorSintatico.txt"
-    with open(arquivo_saida, "w") as arq:
-        if programa_status:
-            arq.write("Análise sintática concluída com sucesso.\n")
-        else:
-            arq.write("Erros encontrados durante a análise sintática.\n")
+#print(tokens)
 
-        for pos, token in enumerate(tokens_analisados, 1):
-            arq.write(f"Posição: {pos}, Token: {token}\n")
+sintatico(tokens)
+exibe_imprime()
 
-# Chamada da função
-exibe_imprime(syntactic_analyzer.programa(), iter(syntactic_analyzer.next_token, None))
-
-
-
-# if syntactic_analyzer.programa():
-#     print("Análise sintática concluída com sucesso.")
-# else:
-#     print("Erros encontrados durante a análise sintática.")
-
-# for pos, token in enumerate(iter(syntactic_analyzer.next_token, None), 1):
-#     print(f"Posição: {pos}, Token: {token}")
