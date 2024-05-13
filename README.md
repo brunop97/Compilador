@@ -46,27 +46,8 @@ Símbolos Terminais:
 - CMD_IF: Comando if
 - CMD_ELSE: Comando else
 
-------------------------------------------
-
-Símbolos Não Terminais:
-
-- programa: Representa o programa completo.
-- bloco: Representa um bloco de instruções.
-- declaração: Representa uma declaração de variável ou um comando.
-- decl_var_lista: Representa uma declaração de várias variáveis.
-- decl_var_simples: Representa uma declaração de variável simples (opcional inicialização).
-- tipo_var: Representa o tipo de variável (inteiro, real, etc.).
-- lista_var: Representa uma lista de variáveis separadas por vírgulas.
-- expr: Representa uma expressão aritmética ou relacional.
-- termo: Representa um termo na expressão aritmética.
-- fator: Representa um fator na expressão aritmética.
-- op_relacional: Representa um operador relacional.
-- comando_atribuicao: Representa um comando de atribuição.
-- comando_repeticao: Representa um comando de repetição while.
-- comando_condicional: Representa um comando condicional if-else.
-- comando: Representa um comando simples ou um bloco de instruções.
-
 ------------------
+
 Regras de Produção:
 
 Sintatico -> statements
