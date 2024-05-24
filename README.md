@@ -10,10 +10,8 @@ Este analisador apresenta uma implementação simples de analisador léxico e an
 O Analisador Léxico reconhece os seguintes padrões:
 
 - Delimitadores: ';', '[', ']', ')', '(', ')', '{', '}', ',', '.'; desconsiderando brancos e sinais de tabulação;
-- Números: [0-9];
-- Letras maiúsculas: [A-Z];
-- Letras minúsculas: [a-z];
-- Identificadores: palavras formadas por Letras maiúsculas e minúsculas;
+- Números: [0-9]+;
+- Identificadores: palavras formadas por Letras maiúsculas, minúsculas e números [a-zA-Z][a-zA-Z0-9_]*;
 - Operadores aritméticos binários: '+', '-', '*', '/', '^';
 - Operadores relacionais binários: '>', '>=', '<', '<=', '<>', '==';
 - Comando de atribuição: '=';
@@ -38,10 +36,10 @@ Símbolos Terminais:
 - ID: Identificador (variável)
 - ID_VAR: Identificador de tipo de variável (inteiro, real, etc.)
 - NUM: Número (inteiro ou real)
-- OP_ATR: Operador de atribuição (=)
-- OP_ARIT: Operador aritmetico (+ - * / ^)
-- OP_BINARIO: Operador binario (>= <= <> == > <)
-- DELIM: Delimitador (; [ ] ) ( { } , .)
+- OP_ATRIBUICAO: Operador de atribuição (=)
+- OP_ARITMETICO: Operador aritmetico (+ - * / ^)
+- OP_RELACIONAL: Operador binario (>= <= <> == > <)
+- DELIMITADOR: Delimitador (; [ ] ) ( { } , .)
 - CMD_WHILE: Comando while
 - CMD_IF: Comando if
 - CMD_ELSE: Comando else
@@ -50,28 +48,21 @@ Símbolos Terminais:
 
 Regras de Produção:
 
-- Sintatico -> statements
-- statements -> statement | statement , statements
+- Sintatico -> var_declaration statements
+- var_declaration -> 'var' ID_VAR (',' ID_VAR) | ε
+- statements -> statement statements | ε
 - statement -> assignment | verify_if | verify_while
-- assignment -> identifier OP_ATR expression
+- assignment -> identifier OP_ATRIBUICAO expression
 - expression -> math_expression | '(' bin_expression ')'
-- math_expression -> identifier | number | OP_ARIT math_expression
-- bin_expression -> identifier OP_BINARIO identifier | '(' expression OP_BINARIO expression ')'
-- verify_if -> CMD_IF '(' expression ')' '{' statements '}' (CMD_ELSE '{' statements '}')
+- math_expression -> identifier | NUM | OP_ARITMETICO math_expression
+- bin_expression -> identifier OP_RELACIONAL (identifier | NUM) | '(' expression OP_RELACIONAL expression ')'
+- verify_if -> CMD_IF '(' expression ')' '{' statements '}' (CMD_ELSE '{' statements '}' | ε)
 - verify_while -> CMD_WHILE '(' expression ')' '{' statements '}'
-- identifier -> ID (',' ID)*
-- number -> NUM
+- identifier -> ID (',' ID)
 
 # Como Executar
 
 Para executar o analisador em um ambiente Linux ou Windows é necessario possuir o python 3.10.7 instalado. Com o python instalado abra o terminal e siga os passos abaixo.
 Neste caso o arquivo de teste a ser carregado é o DadosEntradaAnalisador.txt
 
-> python AnalisadorLexico.py
-- Em seguida:
-> python AnalisadorSintatico.py
-
-# Arquivos de Saida
-Ao executar o analisador será gerado um arquivo:
-- Arquivo com os tokens gerados do analisador Léxico. (SaidaAnalisadorLexico.txt)
-- Arquivo com os tokens gerados do analisador Sintático. (SaidaAnalisadorSintatico.txt)
+> python Analisador.py
