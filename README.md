@@ -3,14 +3,11 @@
 # Analisador
 Analisador Lexico e Sintático
 
-
 # Sobre o Analisador Léxico
-Este analisador apresenta uma implementação simples de analisador léxico e analisador sintático. O mesmo está escrito em python 3.10.7. 
-
 O Analisador Léxico reconhece os seguintes padrões:
 
 - Delimitadores: ';', '[', ']', ')', '(', ')', '{', '}', ',', '.'; desconsiderando brancos e sinais de tabulação;
-- Números: [0-9]+;
+- Números: [0-9]+(.[0-9]+)?;
 - Identificadores: palavras formadas por Letras maiúsculas, minúsculas e números [a-zA-Z][a-zA-Z0-9_]*;
 - Operadores aritméticos binários: '+', '-', '*', '/', '^';
 - Operadores relacionais binários: '>', '>=', '<', '<=', '<>', '==';
@@ -34,7 +31,7 @@ O Analisador Sintático reconhece os seguintes padrões:
 Símbolos Terminais:
 
 - ID: Identificador (variável)
-- ID_VAR: Identificador de tipo de variável (inteiro, real, etc.)
+- ID_VAR: Identificador de tipo de variável (int, float, char, real, etc.)
 - NUM: Número (inteiro ou real)
 - OP_ATRIBUICAO: Operador de atribuição (=)
 - OP_ARITMETICO: Operador aritmetico (+ - * / ^)
@@ -44,21 +41,19 @@ Símbolos Terminais:
 - CMD_IF: Comando if
 - CMD_ELSE: Comando else
 
-------------------
-
 Regras de Produção:
 
-- Sintatico -> var_declaration statements
-- var_declaration -> 'var' ID_VAR (',' ID_VAR) | ε
-- statements -> statement statements | ε
-- statement -> assignment | verify_if | verify_while
-- assignment -> identifier OP_ATRIBUICAO expression
-- expression -> math_expression | '(' bin_expression ')'
-- math_expression -> identifier | NUM | OP_ARITMETICO math_expression
-- bin_expression -> identifier OP_RELACIONAL (identifier | NUM) | '(' expression OP_RELACIONAL expression ')'
-- verify_if -> CMD_IF '(' expression ')' '{' statements '}' (CMD_ELSE '{' statements '}' | ε)
-- verify_while -> CMD_WHILE '(' expression ')' '{' statements '}'
-- identifier -> ID (',' ID)
+- Program → var_declaration statements
+- var_declaration → "var" ID_VAR ID ("," ID)
+- statements → statement statements | ε
+- statement → assignment | verify_if | verify_while
+- verify_if → "if" "(" bin_expression ")" statement ("else" statement | ε)
+- verify_while → "while" "(" bin_expression ")" statement
+- assignment → ID "=" expression
+- expression → term (OP_ARITMETICO term)
+- term → fator (OP_ARITMETICO fator)
+- fator → ID | NUM | "(" expression ")"
+- bin_expression → expression OP_RELACIONAL expression
 
 # Como Executar
 

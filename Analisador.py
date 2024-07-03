@@ -38,206 +38,229 @@ def lexico(input_string):
 
     return tokens
 
-def sintatico(tokens):
+def generate_C3E(tokens):
+    temp_count = 0
+    label_count = 0
+
+    def new_temp():
+        nonlocal temp_count
+        temp_name = f"T{temp_count}"
+        temp_count += 1
+        return temp_name
+
+    def new_label():
+        nonlocal label_count
+        label_name = f"L{label_count}"
+        label_count += 1
+        return label_name
+
+    C3E_code = []
+
+    def var_declaration(tokens):
+        if tokens and tokens[0][1] == "var":
+            tokens.pop(0)
+            C3E_code.append(f"var")
+            while tokens and tokens[0][0] in ['ID_VAR']:
+                if tokens and tokens[0][0] in ['ID_VAR']:
+                    type_token = tokens.pop(0)
+                    while tokens and tokens[0][0] in ['ID'] and tokens[1][0] not in ['OP_ATRIBUICAO']:
+                        identifier = tokens.pop(0)
+                        declared_id.append(identifier[1])  # Add to declared identifiers
+                        C3E_code.append(f"{type_token[1]} {identifier[1]}")
+                        if tokens and tokens[0][1] == ',':
+                            tokens.pop(0)
+                else:
+                    raise SyntaxError("Expected 'ID_VAR' after 'var' declaration")
+        else:
+            raise SyntaxError("Expected 'var' declaration")
+
+    def statements(tokens):
+        while tokens:
+            if tokens and tokens[0][1] == "}":
+                return
+            else:
+                statement(tokens)
+
+    def statement(tokens):
+        if tokens and tokens[0][0] == "CMD_IF":
+            verify_if(tokens)
+        elif tokens[0][0] == "CMD_WHILE":
+            verify_while(tokens)
+        else:
+            if match(tokens[0][1], declared_id):
+                assignment(tokens)
+            else:
+                raise SyntaxError(f"Identifier '{tokens[0][1]}' not declared")
+
+    def verify_if(tokens):
+        if tokens and tokens[0][0] == "CMD_IF":
+            tokens.pop(0)
+            if tokens and tokens[0][1] == "(":
+                tokens.pop(0)
+                cond_expr = bin_expression(tokens, invert=False)
+                if tokens and tokens[0][1] == ")":
+                    tokens.pop(0)
+                    true_label = new_label()
+                    false_label = new_label()
+                    C3E_code.append(f"if {cond_expr} goto {true_label}")
+                    C3E_code.append(f"goto {false_label}")
+                    C3E_code.append(f"{true_label}:")
+                    if tokens and tokens[0][1] == "{":
+                        tokens.pop(0)
+                        statements(tokens)
+                        if tokens and tokens[0][1] == "}":
+                            tokens.pop(0)
+                            if tokens and tokens[0][0] == "CMD_ELSE":
+                                end_label = new_label()
+                                C3E_code.append(f"goto {end_label}")
+                                C3E_code.append(f"{false_label}:")
+                                tokens.pop(0)
+                                if tokens and tokens[0][1] == "{":
+                                    tokens.pop(0)
+                                    statements(tokens)
+                                    if tokens and tokens[0][1] == "}":
+                                        tokens.pop(0)
+                                        C3E_code.append(f"{end_label}:")
+                                    else:
+                                        raise SyntaxError("Expected '}' to end else statements")
+                                else:
+                                    raise SyntaxError("Expected '{' to initiate else statements")
+                            else:
+                                C3E_code.append(f"{false_label}:")
+                        else:
+                            raise SyntaxError("Expected '}' to end if statements")
+                    else:
+                        raise SyntaxError("Expected '{' to initiate if statements")
+                else:
+                    raise SyntaxError("Expected ')' to end if conditions")
+            else:
+                raise SyntaxError("Expected '(' to initiate if conditions")
+
+    def verify_while(tokens):
+        if tokens and tokens[0][0] == "CMD_WHILE":
+            tokens.pop(0)
+            if tokens and tokens[0][1] == "(":
+                tokens.pop(0)
+                cond_expr = bin_expression(tokens, invert=True)
+                if tokens and tokens[0][1] == ")":
+                    tokens.pop(0)
+                    begin_label = new_label()
+                    end_label = new_label()
+                    C3E_code.append(f"{begin_label}:")
+                    C3E_code.append(f"if {cond_expr} goto {end_label}")
+                    if tokens and tokens[0][1] == "{":
+                        tokens.pop(0)
+                        statements(tokens)
+                        C3E_code.append(f"goto {begin_label}")
+                        if tokens and tokens[0][1] == "}":
+                            tokens.pop(0)
+                            C3E_code.append(f"{end_label}:")
+                        else:
+                            raise SyntaxError("Expected '}' to end while statements")
+                    else:
+                        raise SyntaxError("Expected '{' to initiate while statements")
+                else:
+                    raise SyntaxError("Expected ')' to end while conditions")
+            else:
+                raise SyntaxError("Expected '(' to initiate while conditions")
+
+    def assignment(tokens):
+        identifier = tokens.pop(0)[1]
+        if tokens and tokens[0][0] == "OP_ATRIBUICAO":
+            tokens.pop(0)
+            expr = expression(tokens)
+            C3E_code.append(f"{identifier} = {expr}")
+        else:
+            raise SyntaxError("Expected '=' after identifier")
+
+    def expression(tokens):
+        left = term(tokens)
+        while tokens and tokens[0][0] == "OP_ARITMETICO":
+            op = tokens.pop(0)[1]
+            right = term(tokens)
+            temp = new_temp()
+            C3E_code.append(f"{temp} = {left} {op} {right}")
+            left = temp
+        return left
+
+    def term(tokens):
+        left = fator(tokens)
+        while tokens and tokens[0][0] == "OP_ARITMETICO" and tokens[0][1] in "*/":
+            op = tokens.pop(0)[1]
+            right = fator(tokens)
+            temp = new_temp()
+            C3E_code.append(f"{temp} = {left} {op} {right}")
+            left = temp
+        return left
+
+    def fator(tokens):
+        if tokens[0][1] == "(":
+            tokens.pop(0)
+            expr = expression(tokens)
+            if tokens[0][1] == ")":
+                tokens.pop(0)
+                return expr
+            else:
+                raise SyntaxError("Expected ')' after expression")
+        elif tokens[0][0] == "ID":
+            if match(tokens[0][1], declared_id):
+                return tokens.pop(0)[1]
+            else:
+                raise SyntaxError(f"Identifier '{tokens[0][1]}' not declared")
+        elif tokens[0][0] == "NUM":
+            return tokens.pop(0)[1]
+        else:
+            raise SyntaxError("Invalid factor")
+
+    def bin_expression(tokens, invert=False):
+        left = term(tokens)
+        if tokens and tokens[0][0] in ["OP_RELACIONAL"]:
+            op = tokens.pop(0)[1]
+            right = term(tokens)
+            if invert:
+                if op == ">":
+                    op = "<="
+                elif op == "<":
+                    op = ">="
+                elif op == ">=":
+                    op = "<"
+                elif op == "<=":
+                    op = ">"
+            return f"{left} {op} {right}"
+        else:
+            raise SyntaxError("Expected a relational operator")
+
     var_declaration(tokens)
     statements(tokens)
 
-def var_declaration(tokens):
-    # DECLARACAO DO TIPO DAS VARIAVEIS E SEUS NOMES
-    if tokens[0][1] == "var":
-        tokens.pop(0)
-        while tokens and tokens[0][0] in ['ID_VAR']:
-            if tokens[0][0] in ['ID_VAR']:
-                tokens.pop(0)
-                while tokens and tokens[0][0] in ['ID'] and tokens[1][0] not in ['OP_ATRIBUICAO']:
-                    declared_id.append(tokens[0][1])  # Add to declared identifiers
-                    identifier(tokens)
-            else:
-                raise SyntaxError("Expected 'ID_VAR' after 'var' declaration")
-    else:
-        raise SyntaxError("Expected 'var' declaration")
-
-    # Declaracao de valores
-    if tokens and tokens[0][1] not in ['if', 'else', 'while']:
-        if match(tokens[0][1], declared_id):
-            assignment(tokens)
-        else:
-            raise SyntaxError(f"Identifier '{tokens[0][1]}' not declared OR expected an OP_ARITMETICO")
-            
-
-def statements(tokens):
-    while tokens:
-        if tokens[0][1] == "}":
-            return
-        else:
-            statement(tokens)
-
-def statement(tokens):
-    if tokens[0][0] == "CMD_IF":
-        verify_if(tokens)
-    elif tokens[0][0] == "CMD_WHILE":
-        verify_while(tokens)
-    else:
-        if match(tokens[0][1], declared_id):
-            assignment(tokens)
-        else:
-            raise SyntaxError(f"Identifier '{tokens[0][1]}' not declared")
-
-def verify_if(tokens):
-    if tokens[0][0] == "CMD_IF":
-        tokens.pop(0)
-        if tokens[0][1] == "(":
-            tokens.pop(0)
-            bin_expression(tokens)
-            if tokens[0][1] == ")":
-                tokens.pop(0)
-                if tokens[0][1] == "{":
-                    tokens.pop(0)
-                    statements(tokens)
-                    if tokens[0][1] == "}":
-                        tokens.pop(0)
-                        if tokens and tokens[0][0] == "CMD_ELSE":
-                            tokens.pop(0)
-                            if tokens[0][1] == "{":
-                                tokens.pop(0)
-                                statements(tokens)
-                                if tokens[0][1] == "}":
-                                    tokens.pop(0)
-                                else:
-                                    raise SyntaxError("Expected '}' to end else statements")
-                            else:
-                                raise SyntaxError("Expected '{' to initiate else statements")
-                        else:
-                            return
-                    else:
-                        raise SyntaxError("Expected '}' to end if statements")
-                else:
-                    raise SyntaxError("Expected '{' to initiate if statements")
-            else:
-                raise SyntaxError("Expected ')' to end if conditions")
-        else:
-            raise SyntaxError("Expected '(' to initiate if conditions")
-
-def verify_while(tokens):
-    if tokens[0][0] == "CMD_WHILE":
-        tokens.pop(0)
-        if tokens[0][1] == "(":
-            tokens.pop(0)
-            bin_expression(tokens)
-            if tokens[0][1] == ")":
-                tokens.pop(0)
-                if tokens[0][1] == "{":
-                    tokens.pop(0)
-                    statements(tokens)
-                    if tokens[0][1] == "}":
-                        tokens.pop(0)
-                    else:
-                        raise SyntaxError("Expected '}' to end while statements")
-                else:
-                    raise SyntaxError("Expected '{' to initiate while statements")
-            else:
-                raise SyntaxError("Expected ')' to end while conditions")
-        else:
-            raise SyntaxError("Expected '(' to initiate while conditions")
-
-def assignment(tokens):
-    identifier(tokens)
-    if not tokens:
-        raise SyntaxError("Expected '=' after identifier, but tokens are empty")
-    if tokens[0][0] == "OP_ATRIBUICAO":
-        tokens.pop(0)
-        math_expression(tokens)
-    else:
-        raise SyntaxError("Expected '=' after identifier")
-
-def math_expression(tokens):
-    term(tokens)
-    while tokens and tokens[0][0] == "OP_ARITMETICO":
-        op_aritmetico(tokens)
-        term(tokens)
-
-def term(tokens):
-    if tokens[0][0] == "ID":
-        if match(tokens[0][1], declared_id):
-            identifier(tokens)
-        else:
-            raise SyntaxError(f"Identifier '{tokens[0][1]}' not declared")
-    elif tokens[0][0] == "NUM":
-        number(tokens)
-    elif tokens[0][1] == "(":
-        tokens.pop(0)
-        math_expression(tokens)
-        if not tokens:
-            raise SyntaxError(f"Expected ')' to end math expression, but tokens are empty")
-        if tokens[0][1] == ")":
-            tokens.pop(0)
-        else:
-            raise SyntaxError("Expected ')' to end math expression")
-    else:
-        raise SyntaxError("Expected identifier or number")
-
-def expression(tokens):
-    if tokens[0][1] == "(":
-        tokens.pop(0)
-        bin_expression(tokens)
-        if tokens[0][1] == ")":
-            return
-        else:
-            raise SyntaxError("Expected ')' after expression")
-    else:
-        raise SyntaxError("Invalid expression")
-
-# FUNCÃO QUE VERIFICA SE HÁ UMA COMPARAÇÃO DENTRO DO PARENTESES DAS FUNCOES
-def bin_expression(tokens):
-    if tokens[0][0] in ["ID"]:
-        tokens.pop(0)
-        if tokens[0][0] in ["OP_RELACIONAL"]:
-            tokens.pop(0)
-        else:
-            raise SyntaxError("Expected an 'Operador Binario' after an identifier")
-
-        if tokens[0][0] in ["ID", "NUM"]:
-            tokens.pop(0)
-            bin_expression(tokens)
-        else:
-            raise SyntaxError("Expected an 'identifier or Number' after Operador Binario")
-    else:
-        return
-
-def identifier(tokens):
-    if tokens[0][0] in ["ID"]:
-        tokens.pop(0)
-        if tokens and tokens[0][1] in [',']:
-            tokens.pop(0)
-    else:
-        raise SyntaxError("Invalid identifier")
-
-def number(tokens):
-    if tokens[0][0] == "NUM":
-        tokens.pop(0)
-    else:
-        raise SyntaxError("Invalid number")
-
-def op_aritmetico(tokens):
-    if tokens[0][0] == "OP_ARITMETICO":
-        tokens.pop(0)
-    else:
-        raise SyntaxError("Invalid Aritmetic Operator")
-
+    return C3E_code
 
 input_string = '''
 var
-    int b, x, y, h, ah, z
+   int cont, num, contador
+   real cont2
 
-    b  3.14 + x - ((y * h / ah) ^ z)
-
-
+   num = 0
+while(cont < 10) {
+   cont2 = 3.1415 * contador ^ 2
+   if (cont < 5) {
+      num = num + cont2
+   }
+   else {
+      cont = 0
+   }
+      cont = cont + 1
+}
 '''
 
-tokens = lexico(input_string)
+tokenC3E = lexico(input_string)
 
 try:
-    sintatico(tokens)
-    print("\n\nAnalise Lexica e Sintatica Concluida Com Sucesso\n\n")
+    declared_id = []
+    C3E_code = generate_C3E(tokenC3E)
+    print("\n\nDDS C3E do Programa:\n")
+    for line in C3E_code:
+        print(line)
+
 except SyntaxError as e:
     print(f"Erro de sintaxe: {e}")
